@@ -1,8 +1,10 @@
 ﻿using Application.Interfaces;
+using Application.UseCases.Handlers;
 using Application.UseCases.KitchenOrders.Comands;
 using Application.UseCases.KitchenOrders.Handlers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace API.Controllers
 {
@@ -11,16 +13,77 @@ namespace API.Controllers
     public class KitchenOrdersController : ControllerBase
     {
         private readonly ICreateKitchenOrderHandler _createHandler;
+        private readonly IRecalculateOrderHandler _recalculateHandler;
+        private readonly GetKitchenQueueHandler _getKitchenQueueHandler;
 
-        public KitchenOrdersController(ICreateKitchenOrderHandler createHandler)
+        public KitchenOrdersController(ICreateKitchenOrderHandler createHandler, IRecalculateOrderHandler recalculateHandler, GetKitchenQueueHandler getKitchenQueueHandler)
         {
             _createHandler = createHandler;
+            _recalculateHandler = recalculateHandler;
+            _getKitchenQueueHandler = getKitchenQueueHandler;
+        }
+        [HttpGet("queue")]
+        public async Task<IActionResult> GetQueue()
+        {
+            var queue = await _getKitchenQueueHandler.HandleAsync();
+
+            return Ok(queue);
         }
 
+        [HttpPut("items/{itemId}/start")]
+        public async Task<IActionResult> StartItemPreparation(Guid itemId, [FromServices] StartItemPreparationHandler handler)
+        {
+            var success = await handler.HandleAsync(itemId);
+
+            if (!success)
+            {
+                return NotFound(new { message = "No se encontró el plato o la orden." });
+            }
+
+            return Ok(new { message = "Preparación del plato iniciada correctamente." });
+        }
+
+        [HttpPut("items/{itemId}/complete")]
+        public async Task<IActionResult> CompleteItem(Guid itemId, [FromServices] CompleteItemHandler handler)
+        {
+            var success = await handler.HandleAsync(itemId);
+
+            if (!success)
+            {
+                return NotFound(new { message = "No se encontró el plato o la orden." });
+            }
+
+            return Ok(new { message = "Plato marcado como listo. Orden actualizada." });
+        }
+
+        [HttpPut("items/{itemId}/cancel")]
+        public async Task<IActionResult> CancelItem(Guid itemId, [FromServices] CancelItemHandler handler)
+        {
+            var success = await handler.HandleAsync(itemId);
+
+            if (!success)
+            {
+                return NotFound(new { message = "No se encontró el plato o ya estaba cancelado." });
+            }
+
+            return Ok(new { message = "Plato cancelado. Orden recalculada correctamente." });
+        }
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateKitchenOrderCommand command)
         {
             var order = await _createHandler.CreateKitchenOrder(command);
+            return Ok(order);
+        }
+
+        [HttpPut("{orderId}/recalculate")]
+        public async Task<IActionResult> Recalculate(
+        Guid orderId,
+        [FromBody] RecalculateOrderCommand command)
+        {
+            
+            command.OrderId = orderId;
+
+            var order = await _recalculateHandler.RecalculateOrder(command);
             return Ok(order);
         }
     }

@@ -25,6 +25,8 @@ builder.Services.AddScoped<IKitchenOrderRepository, KitchenOrderRepository>();
 
 // Handlers
 builder.Services.AddScoped<ICreateKitchenOrderHandler, CreateKitchenOrderHandler>();
+builder.Services.AddScoped<IRecalculateOrderHandler, RecalculateOrderHandler>();
+
 
 builder.Services.AddScoped<Application.UseCases.Handlers.GetKitchenQueueHandler>();
 builder.Services.AddScoped<Application.UseCases.Handlers.StartItemPreparationHandler>();
