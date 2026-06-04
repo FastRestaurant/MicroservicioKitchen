@@ -11,6 +11,7 @@ namespace Domain.Enums
         Pending = 0,
         Preparing = 1,
         Ready = 2,
-        Cancelled = 3
+        Cancelled = 3,
+        Ruined = 4
     }
 }
