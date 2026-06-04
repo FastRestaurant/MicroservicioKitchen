@@ -17,6 +17,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register Repositories
 builder.Services.AddScoped<IKitchenOrderRepository, KitchenOrderRepository>();
 
+
+builder.Services.AddScoped<Application.UseCases.Handlers.GetKitchenQueueHandler>();
+builder.Services.AddScoped<Application.UseCases.Handlers.StartItemPreparationHandler>();
+builder.Services.AddScoped<Application.UseCases.Handlers.CompleteItemHandler>();
+builder.Services.AddScoped<Application.UseCases.Handlers.CancelItemHandler>();
+
+
 // Add CORS
 builder.Services.AddCors(options =>
 {

@@ -13,5 +13,7 @@ namespace Application.Interfaces
         Task<List<KitchenOrder>> GetActiveOrdersAsync();
         Task<KitchenOrder> CreateAsync(KitchenOrder order);
         Task<KitchenOrder> UpdateAsync(KitchenOrder order);
+
+        Task<KitchenOrder?> GetOrderByItemIdAsync(Guid itemId);
     }
 }

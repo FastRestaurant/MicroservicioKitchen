@@ -48,5 +48,12 @@ namespace Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync();
             return order;
         }
+
+        public async Task<KitchenOrder?> GetOrderByItemIdAsync(Guid itemId)
+        {
+            return await _context.KitchenOrders
+                .Include(k => k.Items)
+                .FirstOrDefaultAsync(k => k.Items.Any(i => i.Id == itemId));
+        }
     }
 }
