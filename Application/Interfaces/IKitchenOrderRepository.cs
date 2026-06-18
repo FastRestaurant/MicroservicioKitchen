@@ -16,5 +16,6 @@ namespace Application.Interfaces
 
         Task<KitchenOrder?> GetOrderByItemIdAsync(Guid itemId);
         Task<KitchenOrder?> GetOrderWithItemsAsync(Guid orderId);
+        Task<KitchenOrder?> GetByOrderIdAsync(Guid orderId);
     }
 }
