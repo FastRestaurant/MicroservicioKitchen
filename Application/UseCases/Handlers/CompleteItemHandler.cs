@@ -21,12 +21,10 @@ namespace Application.UseCases.Handlers
         {
             // 1. Buscamos la orden padre y sus ítems
             var order = await _repository.GetOrderByItemIdAsync(orderItemId);
-
             if (order == null) return false;
 
             // 2. Buscamos el ítem específico
             var item = order.Items.FirstOrDefault(i => i.Id == orderItemId);
-
             if (item == null) return false;
 
             // Validación de seguridad: Evitar procesar un ítem que ya está listo
@@ -39,17 +37,18 @@ namespace Application.UseCases.Handlers
             // 4. LA REGLA DE ORO: Incrementamos los platos completados en la orden
             order.CompletedItems++;
 
+            var activeItemsCount = order.Items
+            .Count(i => i.Status != ItemStatus.Cancelled && i.Status != ItemStatus.Ruined);
+
             // 5. Condición de cierre: ¿Están todos los platos de esta mesa listos?
-            if (order.CompletedItems == order.TotalItems)
+            if (order.CompletedItems >= activeItemsCount)
             {
                 order.Status = OrderStatus.Ready;
-                // Opcional: También podríamos setear el ActualFinishTime de la orden acá
                 order.ActualFinishTime = DateTime.UtcNow;
             }
 
             // 6. Guardamos todos los cambios en la base de datos
             await _repository.UpdateAsync(order);
-
             return true;
         }
     }
