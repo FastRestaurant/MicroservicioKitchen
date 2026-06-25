@@ -1,5 +1,6 @@
 using API.Middlewares;
 using Application.Interfaces;
+using Application.service;
 using Application.UseCases.KitchenOrders.Comands;
 using Application.UseCases.KitchenOrders.Handlers;
 using Domain.Entities;
@@ -20,7 +21,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register Repositories
 builder.Services.AddScoped<IKitchenOrderRepository, KitchenOrderRepository>();
-
+builder.Services.AddScoped<IKitchenOrchestratorRepository, KitchenOrchestratorRepository>();
+builder.Services.AddScoped<IKitchenOrchestrator, KitchenOrchestrator>();
+builder.Services.AddScoped<ICompleteKitchenOrderItemHandler, CompleteKitchenOrderItemHandler>();
 
 
 // Handlers

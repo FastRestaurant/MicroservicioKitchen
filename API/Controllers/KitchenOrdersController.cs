@@ -13,10 +13,13 @@ namespace API.Controllers
     public class KitchenOrdersController : ControllerBase
     {
         private readonly ICreateKitchenOrderHandler _createHandler;
-
-        public KitchenOrdersController(ICreateKitchenOrderHandler createHandler)
+        private readonly IKitchenOrchestrator _orchestrator;
+        private readonly ICompleteKitchenOrderItemHandler _completeItemHandler;
+        public KitchenOrdersController(ICreateKitchenOrderHandler createHandler, IKitchenOrchestrator orchestrator, ICompleteKitchenOrderItemHandler completeItemHandler)
         {
             _createHandler = createHandler;
+            _orchestrator = orchestrator;
+            _completeItemHandler = completeItemHandler;
         }
 
 
@@ -37,9 +40,8 @@ namespace API.Controllers
         [HttpGet("queue")]
         public async Task<IActionResult> GetQueue()
         {
-            // repensar para la lista que debe devolver al front 
-
-            return Ok();
+            var queue = await _orchestrator.GetItemsFromQueueAsync();
+            return Ok(queue);
         }
 
 
@@ -48,6 +50,15 @@ namespace API.Controllers
         public IActionResult Get()
         {
             return Ok("ok");
+        }
+
+        // para marcar un plato como ya finalizado
+        [HttpPut("items/{id}/complete")]
+        public async Task<IActionResult> CompleteItem(Guid id)
+        {
+            var command = new CompleteKitchenOrderItemCommand { ItemId = id };
+            await _completeItemHandler.ExecuteAsync(command);
+            return NoContent();
         }
 
     }

@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Application.UseCases.KitchenOrders.Comands
 {
-    internal class CompleteKitchenOrderItemCommand
+    public class CompleteKitchenOrderItemCommand
     {
+        public Guid ItemId { get; set; }
     }
 }
