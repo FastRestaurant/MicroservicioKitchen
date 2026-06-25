@@ -8,15 +8,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers
 {
 
-    [ApiController]
+    [ApiController] 
     [Route("api/kitchenOrders")]
     public class KitchenOrdersController : ControllerBase
     {
         private readonly ICreateKitchenOrderHandler _createHandler;
 
-        public KitchenOrdersController(ICreateKitchenOrderHandler createHandler)
+        private readonly IKitchenOrderRepository _repository;
+        private readonly IKitchenOrchestrator _orchestrator;
+        private readonly ICompleteKitchenOrderItemHandler _completeItemHandler;
+        public KitchenOrdersController(ICreateKitchenOrderHandler createHandler, IKitchenOrderRepository repository, IKitchenOrchestrator orchestrator, ICompleteKitchenOrderItemHandler completeItemHandler)
         {
             _createHandler = createHandler;
+            _repository = repository;
+            _orchestrator = orchestrator;
+            _completeItemHandler = completeItemHandler;
+
         }
 
 
@@ -30,16 +37,24 @@ namespace API.Controllers
             return Ok(order);
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var order = await _repository.GetByIdAsync(id);
 
+            if (order == null)
+                return NotFound();
+
+            return Ok(order);
+        }
 
 
         // devolver la lista de platos al front 
         [HttpGet("queue")]
         public async Task<IActionResult> GetQueue()
         {
-            // repensar para la lista que debe devolver al front 
-
-            return Ok();
+            var queue = await _orchestrator.GetItemsFromQueueAsync();
+            return Ok(queue);
         }
 
 
@@ -48,6 +63,15 @@ namespace API.Controllers
         public IActionResult Get()
         {
             return Ok("ok");
+        }
+
+        // para marcar un plato como ya finalizado
+        [HttpPut("items/{id}/complete")]
+        public async Task<IActionResult> CompleteItem(Guid id)
+        {
+            var command = new CompleteKitchenOrderItemCommand { ItemId = id };
+            await _completeItemHandler.ExecuteAsync(command);
+            return NoContent();
         }
 
     }

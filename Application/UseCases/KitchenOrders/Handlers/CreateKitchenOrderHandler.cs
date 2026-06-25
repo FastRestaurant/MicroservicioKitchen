@@ -15,10 +15,11 @@ namespace Application.UseCases.KitchenOrders.Handlers
     public class CreateKitchenOrderHandler : ICreateKitchenOrderHandler
     {
         private readonly IKitchenOrderRepository _repository;
-
-        public CreateKitchenOrderHandler(IKitchenOrderRepository repository)
+        private readonly IKitchenOrchestrator _orchestrator;
+        public CreateKitchenOrderHandler(IKitchenOrderRepository repository, IKitchenOrchestrator orchestrator)
         {
             _repository = repository;
+            _orchestrator = orchestrator;
         }
 
         public async Task<KitchenOrder> CreateKitchenOrder(CreateKitchenOrderCommand command)
@@ -104,44 +105,14 @@ namespace Application.UseCases.KitchenOrders.Handlers
 
                 order.Items.Add(item);
             }
+            // 3. Guardar en la base de datos
+            var savedOrder = await _repository.CreateAsync(order);
 
-            // 3. APLICAR EL ALGORITMO DE SINCRONIZACIÓN (Motor de Orquestación)
-            CalculateSyncTimes(order.Items.ToList());
+            // 4. Llamar al Orchestrator para calcular los tiempos
+            await _orchestrator.EnqueueOrderAsync(savedOrder.Id);
 
-            // 4. Calcular el tiempo estimado de finalización de toda la orden
-            var maxTime = order.Items.Max(i => i.EstimatedTime);
-            order.EstimatedFinishTime = DateTime.UtcNow.AddMinutes(maxTime);
-
-            // 5. Guardar en la base de datos
-            return await _repository.CreateAsync(order);
-        }
-
-       
-        /// Motor de Orquestación: calcula cuándo empezar cada plato
-        /// para que todos terminen al mismo tiempo (sincronización de mesa).
-       
-        private void CalculateSyncTimes(List<KitchenOrderItem> items)
-        {
-            if (!items.Any()) return;
-
-            // Paso 1: Encontrar el plato más lento (el que más tiempo tarda)
-            var maxTime = items.Max(i => i.EstimatedTime);
-
-            // Paso 2: Calcular el tiempo objetivo de finalización
-            // Todos los platos de la mesa deben estar listos en este momento
-            var targetFinishTime = DateTime.UtcNow.AddMinutes(maxTime);
-
-            // Paso 3: Asignar StartTime y PriorityScore a cada item
-            foreach (var item in items)
-            {
-                // El StartTime es: Target - lo que tarda mi plato
-                // Ej: Si el target es 20:15 y mi plato tarda 8 min → empiezo a las 20:07
-                item.StartTime = targetFinishTime.AddMinutes(-item.EstimatedTime);
-
-                // a más tiempo, más prioridad
-                // Esto hace que los platos lentos aparezcan primero en el KDS
-                item.PriorityScore = item.EstimatedTime;
-            }
+            // 5. Recargar la orden con los tiempos actualizados
+            return await _repository.GetByIdAsync(savedOrder.Id);
         }
     }
 }
