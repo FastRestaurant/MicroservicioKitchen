@@ -21,7 +21,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register Repositories
 builder.Services.AddScoped<IKitchenOrderRepository, KitchenOrderRepository>();
+
 builder.Services.AddScoped<IKitchenOrchestrator, KitchenOrchestrator>();
+
+builder.Services.AddScoped<IKitchenOrchestratorRepository, KitchenOrchestratorRepository>();
+builder.Services.AddScoped<IKitchenOrchestrator, KitchenOrchestrator>();
+builder.Services.AddScoped<ICompleteKitchenOrderItemHandler, CompleteKitchenOrderItemHandler>();
+
 
 
 // Handlers
