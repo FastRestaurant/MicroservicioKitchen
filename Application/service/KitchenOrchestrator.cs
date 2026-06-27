@@ -1,13 +1,13 @@
 ﻿using Application.DTOs;
 using Application.Interfaces;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Domain.Entities;
-using Domain.Enums;
 
 
 namespace Application.service
@@ -72,8 +72,13 @@ namespace Application.service
         {
             var order = await _repository.GetByIdAsync(kitchenOrderId);
 
+            // 1. Si no existe -> HTTP 404
             if (order == null)
-                throw new Exception("Order not found");
+                throw new NotFoundException("KitchenOrder", kitchenOrderId);
+
+            // 2. Si la orden ya está en preparación, terminada o cancelada -> HTTP 409
+            if (order.Status != Domain.Enums.OrderStatus.Pending)
+                throw new ConflictException($"La orden no puede ser encolada porque se encuentra en estado: {order.Status}");
 
 
             order.Status = Domain.Enums.OrderStatus.Pending;
@@ -88,6 +93,18 @@ namespace Application.service
         public async Task FinishItemAsync(Guid itemId)
         {
             var item = await _itemRepository.GetItemByIdAsync(itemId);
+
+            // 1. Si el plato no existe -> HTTP 404
+            if (item == null)
+                throw new NotFoundException("KitchenOrderItem", itemId);
+
+            // 2. Si ya estaba finalizado -> HTTP 409
+            if (item.Status == Domain.Enums.ItemStatus.Finished)
+                throw new ConflictException("El plato ya se encuentra marcado como finalizado.");
+
+            // 3. Si fue cancelado previamente -> HTTP 409
+            if (item.Status == Domain.Enums.ItemStatus.Cancelled)
+                throw new ConflictException("No se puede finalizar un plato que ha sido cancelado.");
 
             item.Status = Domain.Enums.ItemStatus.Finished;
             item.FinishTime = DateTime.UtcNow;
