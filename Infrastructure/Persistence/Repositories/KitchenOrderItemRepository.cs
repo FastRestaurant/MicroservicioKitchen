@@ -58,25 +58,30 @@ namespace Infrastructure.Persistence.Repositories
                 .OrderBy(i => i.StartTime)
                 .ToListAsync();
         }
-        public async Task<List<KitchenOrderItem>> GetItemsReadyToWaitingAsync()
+        public async Task<List<KitchenOrderItem>> GetItemsToWaitingAsync()
         {
             var now = DateTime.UtcNow;
 
             return await _context.KitchenOrderItems
                 .Include(i => i.Order)
                 .Where(i =>
-                    (i.Order.Status == OrderStatus.Preparing &&
-                     i.Status == ItemStatus.Preparing &&
-                     i.StartTime > now)
-                    ||
-                    (i.Order.Status == OrderStatus.Pending &&
-                     i.Status == ItemStatus.Preparing))
-                .OrderBy(i => i.Order.Status == OrderStatus.Preparing ? 0 : 1)
-                .ThenBy(i => i.Order.Status == OrderStatus.Preparing
-                    ? i.StartTime
-                    : i.Order.CreatedAt)
+                    i.Order.Status == OrderStatus.Preparing &&
+                    i.Status == ItemStatus.Preparing &&
+                    i.StartTime > now)
+                .OrderBy(i => i.StartTime)
                 .ToListAsync();
         }
+
+        public async Task<List<KitchenOrderItem>> GetPendingItemsAsync()
+        {
+            return await _context.KitchenOrderItems
+                .Include(i => i.Order)
+                .Where(i => i.Order.Status == OrderStatus.Pending)
+                .OrderBy(i => i.Order.CreatedAt)
+                .ToListAsync();
+        }
+
+
 
     }
 }

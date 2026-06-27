@@ -13,6 +13,7 @@ namespace Application.Interfaces
         Task<int> GetActiveCountAsync();
         Task<List<KitchenOrderItem>> GetItemsReadyToCookAsync();
         Task<KitchenOrderItem?> GetItemByIdAsync(Guid itemId);
-        Task<List<KitchenOrderItem>> GetItemsReadyToWaitingAsync();
+        Task<List<KitchenOrderItem>> GetItemsToWaitingAsync();
+        Task<List<KitchenOrderItem>> GetPendingItemsAsync();
     }
 }

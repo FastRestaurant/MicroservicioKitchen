@@ -48,9 +48,14 @@ namespace Application.service
 
         public async Task<List<KitchenQueueItemResponse>> GetWaitingItemsAsync()
         {
-            var listToWaiting = await _itemRepository.GetItemsReadyToWaitingAsync();
+            var itemsToWaiting = await _itemRepository.GetItemsToWaitingAsync();
+            var pendingItems = await _itemRepository.GetPendingItemsAsync();
 
-            return listToWaiting.Select(item => new KitchenQueueItemResponse
+            var items = itemsToWaiting
+                .Concat(pendingItems)
+                .ToList();
+
+            return items.Select(item => new KitchenQueueItemResponse
             {
                 ItemId = item.Id,
                 ProductName = item.ProductName,
