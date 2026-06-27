@@ -18,11 +18,12 @@ namespace Application.UseCases.KitchenOrders.Comands
 
     public class CreateKitchenOrderItemDto
     {
+        public Guid OrderItemId { get; set; }
         public Guid ProductId { get; set; }
         public string ProductName { get; set; } = string.Empty;
-       // public string Category { get; set; } = string.Empty; se elimina categoria innecesario 
         public int DurationMinutes { get; set; } // en minutos
         public int Quantity { get; set; } // se agrega quantity que faltaba 
+        public decimal FactorMultiplierTime { get; set; }
         public string Notes { get; set; } = string.Empty;
     }
 }

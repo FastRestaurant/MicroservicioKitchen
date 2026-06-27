@@ -17,7 +17,6 @@ namespace Infrastructure.Persistence
 
         public DbSet<KitchenOrder> KitchenOrders { get; set; }
         public DbSet<KitchenOrderItem> KitchenOrderItems { get; set; }
-
         public DbSet<KitchenConfiguration> KitchenConfigurations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -12,19 +12,30 @@ namespace Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "KitchenConfigurations",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    MaxConcurrentDishes = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_KitchenConfigurations", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "KitchenOrders",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TableId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     TableNumber = table.Column<int>(type: "int", nullable: false),
-                    WaiterId = table.Column<Guid>(type: "uniqueidentifier", maxLength: 100, nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    WaiterId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    EstimatedFinishTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     ActualFinishTime = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    TotalItems = table.Column<int>(type: "int", nullable: false),
-                    CompletedItems = table.Column<int>(type: "int", nullable: false),
                     LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -40,15 +51,14 @@ namespace Infrastructure.Migrations
                     KitchenOrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ProductName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Category = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    DurationMinutes = table.Column<int>(type: "int", nullable: false),
+                    FactorMultiplierTime = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     EstimatedTime = table.Column<int>(type: "int", nullable: false),
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: true),
                     FinishTime = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    PriorityScore = table.Column<int>(type: "int", nullable: false),
-                    Position = table.Column<int>(type: "int", nullable: false),
-                    Notes = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsRushed = table.Column<bool>(type: "bit", nullable: false)
+                    Notes = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -65,11 +75,24 @@ namespace Infrastructure.Migrations
                 name: "IX_KitchenOrderItems_KitchenOrderId",
                 table: "KitchenOrderItems",
                 column: "KitchenOrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_KitchenOrders_CreatedAt",
+                table: "KitchenOrders",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_KitchenOrders_Status",
+                table: "KitchenOrders",
+                column: "Status");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "KitchenConfigurations");
+
             migrationBuilder.DropTable(
                 name: "KitchenOrderItems");
 

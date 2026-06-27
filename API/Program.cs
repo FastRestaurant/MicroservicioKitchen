@@ -22,17 +22,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register Repositories
 builder.Services.AddScoped<IKitchenOrderRepository, KitchenOrderRepository>();
-
-builder.Services.AddScoped<IKitchenOrchestrator, KitchenOrchestrator>();
-
 builder.Services.AddScoped<IKitchenOrchestratorRepository, KitchenOrchestratorRepository>();
+builder.Services.AddScoped<IKitchenOrderItemRepository, KitchenOrderItemRepository > ();
+
+//manejadores y servicios 
 builder.Services.AddScoped<IKitchenOrchestrator, KitchenOrchestrator>();
-builder.Services.AddScoped<ICompleteKitchenOrderItemHandler, CompleteKitchenOrderItemHandler>();
-
-
-
-// Handlers
 builder.Services.AddScoped<ICreateKitchenOrderHandler, CreateKitchenOrderHandler>();
+builder.Services.AddScoped<ICompleteKitchenOrderItemHandler, CompleteKitchenOrderItemHandler>();
+builder.Services.AddScoped<IOrderServiceClient,OrderServiceClient>();
+builder.Services.AddScoped<IMaxConcurrentDishesHandler, MaxConcurrentDishesHandler>();
+builder.Services.AddScoped<ICancelKitchenOrderHandler, CancelKitchenOrderHandler> ();
+
+
 
 
 builder.Services.AddHttpClient<IOrderServiceClient, OrderServiceClient>(client =>

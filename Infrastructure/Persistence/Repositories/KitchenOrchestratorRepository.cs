@@ -35,5 +35,17 @@ namespace Infrastructure.Persistence.Repositories
                 .Take(limit)
                 .ToListAsync();
         }
+
+        public async Task UpdateMaxConcurrentDishesAsync(int maxConcurrentDishes)
+        {
+            var configuration = await _context.KitchenConfigurations.FirstOrDefaultAsync();
+
+            if (configuration == null)
+                throw new KeyNotFoundException("Kitchen configuration not found.");
+
+            configuration.MaxConcurrentDishes = maxConcurrentDishes;
+
+            await _context.SaveChangesAsync();
+        }
     }
 }

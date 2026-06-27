@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Reflection.Metadata;
+using System.Threading.Tasks;
+using Application.DTOs;
 using Application.Interfaces;
 using Application.UseCases.KitchenOrders.Comands;
 using Application.UseCases.KitchenOrders.Handlers;
@@ -12,21 +14,23 @@ namespace API.Controllers
     [Route("api/kitchenOrders")]
     public class KitchenOrdersController : ControllerBase
     {
-        private readonly ICreateKitchenOrderHandler _createHandler;
-
-        private readonly IKitchenOrderRepository _repository;
         private readonly IKitchenOrchestrator _orchestrator;
+        private readonly ICreateKitchenOrderHandler _createHandler;
+        private readonly ICancelKitchenOrderHandler _cancelKitchenOrderHandler;
         private readonly ICompleteKitchenOrderItemHandler _completeItemHandler;
-        public KitchenOrdersController(ICreateKitchenOrderHandler createHandler, IKitchenOrderRepository repository, IKitchenOrchestrator orchestrator, ICompleteKitchenOrderItemHandler completeItemHandler)
+        private readonly IMaxConcurrentDishesHandler _maxConcurrentDishesHandler;
+        public KitchenOrdersController( ICreateKitchenOrderHandler createHandler,
+                                        ICancelKitchenOrderHandler cancelKitchenOrder,
+                                        IKitchenOrchestrator orchestrator,
+                                        ICompleteKitchenOrderItemHandler completeItemHandler,
+                                        IMaxConcurrentDishesHandler maxConcurrentDishesHandler)
         {
             _createHandler = createHandler;
-            _repository = repository;
             _orchestrator = orchestrator;
             _completeItemHandler = completeItemHandler;
-
+            _cancelKitchenOrderHandler = cancelKitchenOrder;
+            _maxConcurrentDishesHandler = maxConcurrentDishesHandler;
         }
-
-
 
 
         // crea la orden en kitchen  
@@ -37,40 +41,44 @@ namespace API.Controllers
             return Ok(order);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            var order = await _repository.GetByIdAsync(id);
-
-            if (order == null)
-                return NotFound();
-
-            return Ok(order);
-        }
 
 
-        // devolver la lista de platos al front 
+        // devolver la lista de platos actuales al front 
         [HttpGet("queue")]
-        public async Task<IActionResult> GetQueue()
+        public async Task<ActionResult<List<KitchenQueueItemResponse>>> GetQueue()
         {
-            var queue = await _orchestrator.GetItemsFromQueueAsync();
-            return Ok(queue);
+            return Ok(await _orchestrator.GetItemsFromQueueAsync());
         }
 
-
-        // para marcar plato como ya finalizado 
-        [HttpGet]
-        public IActionResult Get()
+        // devolver la lista de platos en espera al front 
+        [HttpGet("queue-waiting-items")]
+        public async Task<ActionResult<List<KitchenQueueItemResponse>>> GetWaitingItems()
         {
-            return Ok("ok");
+            return Ok(await _orchestrator.GetWaitingItemsAsync());
         }
+
 
         // para marcar un plato como ya finalizado
-        [HttpPut("items/{id}/complete")]
+        [HttpPatch("items/{id}/complete")]
         public async Task<IActionResult> CompleteItem(Guid id)
         {
-            var command = new CompleteKitchenOrderItemCommand { ItemId = id };
-            await _completeItemHandler.ExecuteAsync(command);
+            await _completeItemHandler.ExecuteAsync(id);
+            return NoContent();
+        }
+
+        // cancela una order con su id siempre y cuando no alla entrado a la cocina
+        [HttpPatch("orders/{id}/cancel")]
+        public async Task<IActionResult> CancelOrder(Guid id)
+        {
+            await _cancelKitchenOrderHandler.ExecuteAsync(id);
+            return NoContent();
+        }
+
+        // configura el valor maximo  de platos que se pueden trabajar en cocina 
+        [HttpPatch("max-concurrent-dishes")]
+        public async Task<IActionResult> UpdateMaxConcurrentDishes(UpdateMaxConcurrentDishesCommand command)
+        {
+            await _maxConcurrentDishesHandler.ExecuteAsync(command);
             return NoContent();
         }
 

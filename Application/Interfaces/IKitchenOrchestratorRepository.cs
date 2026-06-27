@@ -11,5 +11,6 @@ namespace Application.Interfaces
     {
         Task<int> GetMaxConcurrentDishesAsync();
         Task<List<KitchenOrderItem>> GetFlatActiveQueueAsync(int limit);
+        Task UpdateMaxConcurrentDishesAsync(int maxConcurrentDishes);
     }
 }

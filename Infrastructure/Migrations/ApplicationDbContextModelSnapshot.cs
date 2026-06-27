@@ -22,6 +22,22 @@ namespace Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Domain.Entities.KitchenConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MaxConcurrentDishes")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("KitchenConfigurations");
+                });
+
             modelBuilder.Entity("Domain.Entities.KitchenOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -31,13 +47,7 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime?>("ActualFinishTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CompletedItems")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("EstimatedFinishTime")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("LastUpdatedAt")
@@ -46,21 +56,23 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TableId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("TableNumber")
                         .HasColumnType("int");
 
-                    b.Property<int>("TotalItems")
-                        .HasColumnType("int");
-
                     b.Property<Guid>("WaiterId")
-                        .HasMaxLength(100)
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Status");
 
                     b.ToTable("KitchenOrders", (string)null);
                 });
@@ -71,18 +83,17 @@ namespace Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
 
                     b.Property<int>("EstimatedTime")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("FactorMultiplierTime")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime?>("FinishTime")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRushed")
-                        .HasColumnType("bit");
 
                     b.Property<Guid>("KitchenOrderId")
                         .HasColumnType("uniqueidentifier");
@@ -91,18 +102,15 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Position")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PriorityScore")
-                        .HasColumnType("int");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("StartTime")
                         .HasColumnType("datetime2");

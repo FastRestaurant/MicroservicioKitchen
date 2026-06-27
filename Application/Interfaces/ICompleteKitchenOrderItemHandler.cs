@@ -9,6 +9,6 @@ namespace Application.Interfaces
 {
     public interface ICompleteKitchenOrderItemHandler
     {
-        Task ExecuteAsync(CompleteKitchenOrderItemCommand command);
+        Task ExecuteAsync(Guid id);
     }
 }

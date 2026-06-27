@@ -78,8 +78,6 @@ namespace Application.UseCases.KitchenOrders.Handlers
                 WaiterId = command.WaiterId,
                 Status = OrderStatus.Pending,
                 CreatedAt = DateTime.UtcNow,
-                TotalItems = command.Items.Count,
-                CompletedItems = 0,
                 LastUpdatedAt = DateTime.UtcNow,
                 Items = new List<KitchenOrderItem>()
             };
@@ -93,14 +91,14 @@ namespace Application.UseCases.KitchenOrders.Handlers
                     KitchenOrderId = order.Id,
                     ProductId = itemDto.ProductId,
                     ProductName = itemDto.ProductName,
-                    EstimatedTime = itemDto.DurationMinutes,
+                    Quantity = itemDto.Quantity,
+                    DurationMinutes = itemDto.DurationMinutes,
+                    FactorMultiplierTime = itemDto.FactorMultiplierTime,
+
                     StartTime = null,
                     FinishTime = null,
                     Status = ItemStatus.Pending,
-                    PriorityScore = 0, // Se calcula en el algoritmo
-                    Position = 0,
                     Notes = itemDto.Notes,
-                    IsRushed = false
                 };
 
                 order.Items.Add(item);

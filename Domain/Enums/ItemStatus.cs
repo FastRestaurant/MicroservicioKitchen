@@ -10,7 +10,7 @@ namespace Domain.Enums
     {
         Pending = 0,
         Preparing = 1,
-        Ready = 2,
+        Finished = 2,
         Cancelled = 3,
     }
 }

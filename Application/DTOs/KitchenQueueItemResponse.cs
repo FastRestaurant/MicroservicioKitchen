@@ -6,17 +6,13 @@ using System.Threading.Tasks;
 
 namespace Application.DTOs
 {
-    public class KitchenQueueItemDto
+    public class KitchenQueueItemResponse
     {
         public Guid ItemId { get; set; }
-        public Guid KitchenOrderId { get; set; }
-        public int TableNumber { get; set; }
         public string ProductName { get; set; } = string.Empty;
+        public int Quantity { get; set; }
         public int EstimatedTime { get; set; }
         public DateTime? StartTime { get; set; }
-        public string Status { get; set; } = string.Empty;
-        public int PriorityScore { get; set; }
         public string Notes { get; set; } = string.Empty;
-        public bool IsRushed { get; set; }
     }
 }
