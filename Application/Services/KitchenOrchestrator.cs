@@ -5,7 +5,7 @@ using Domain.Enums;
 using Domain.Exceptions;
 using Microsoft.Extensions.Logging;
 
-namespace Application.service;
+namespace Application.Services;
 
 public sealed class KitchenOrchestrator : IKitchenOrchestrator
 {

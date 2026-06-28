@@ -4,7 +4,7 @@ using API.Authorization;
 using API.Http;
 using API.Middlewares;
 using Application.Interfaces;
-using Application.service;
+using Application.Services;
 using Application.UseCases.KitchenOrders.Handlers;
 using Domain.Entities;
 using Infrastructure.Persistence;

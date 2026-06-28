@@ -9,7 +9,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/kitchenOrders")]
+[Route("api/v1/kitchenOrders")]
 public sealed class KitchenOrdersController : ControllerBase
 {
     private readonly IKitchenOrchestrator _orchestrator;
