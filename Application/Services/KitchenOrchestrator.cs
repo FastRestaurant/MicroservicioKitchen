@@ -1,8 +1,10 @@
 using Application.DTOs;
 using Application.Interfaces;
+using Application.Realtime;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services;
 
@@ -15,19 +17,25 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
     private readonly IKitchenOrchestratorRepository _orchestratorRepository;
     private readonly IOrderServiceClient _orderServiceClient;
     private readonly KitchenSchedulingPolicy _schedulingPolicy;
+    private readonly IKitchenNotifier _kitchenNotifier;
+    private readonly ILogger<KitchenOrchestrator> _logger;
 
     public KitchenOrchestrator(
         IKitchenOrderRepository repository,
         IKitchenOrchestratorRepository orchestratorRepository,
         IKitchenOrderItemRepository itemRepository,
         IOrderServiceClient orderServiceClient,
-        KitchenSchedulingPolicy schedulingPolicy)
+        KitchenSchedulingPolicy schedulingPolicy,
+        IKitchenNotifier kitchenNotifier,
+        ILogger<KitchenOrchestrator> logger)
     {
         _repository = repository;
         _orchestratorRepository = orchestratorRepository;
         _itemRepository = itemRepository;
         _orderServiceClient = orderServiceClient;
         _schedulingPolicy = schedulingPolicy;
+        _kitchenNotifier = kitchenNotifier;
+        _logger = logger;
     }
 
     public async Task<List<KitchenQueueItemResponse>> GetItemsFromQueueAsync(CancellationToken cancellationToken = default)
@@ -87,6 +95,8 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
         {
             ScheduleGate.Release();
         }
+
+        await NotifyQueueChangedAsync(cancellationToken);
     }
 
     private async Task TryScheduleAsync(CancellationToken cancellationToken)
@@ -111,6 +121,29 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
             await _repository.UpdateAsync(order, cancellationToken);
 
             usedSlots += order.Items.Count;
+        }
+    }
+
+    private async Task NotifyQueueChangedAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var cooking = await _itemRepository.GetItemsReadyToCookAsync(cancellationToken);
+            var waiting = (await _itemRepository.GetItemsToWaitingAsync(cancellationToken))
+                .Concat(await _itemRepository.GetPendingItemsAsync(cancellationToken))
+                .ToList();
+
+            var snapshot = new KitchenQueueSnapshotDto
+            {
+                Cooking = cooking.Select(MapToQueueItem).ToList(),
+                Waiting = waiting.Select(MapToQueueItem).ToList()
+            };
+
+            await _kitchenNotifier.NotifyQueueChangedAsync(snapshot, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "No se pudo notificar en tiempo real el cambio de la cola de cocina.");
         }
     }
 

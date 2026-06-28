@@ -2,8 +2,11 @@ using System.Security.Claims;
 using System.Text;
 using API.Authorization;
 using API.Http;
+using API.Hubs;
+using API.Realtime;
 using API.Middlewares;
 using Application.Interfaces;
+using Application.Realtime;
 using Application.Services;
 using Application.UseCases.KitchenOrders.Handlers;
 using Domain.Entities;
@@ -32,7 +35,9 @@ builder.Services.AddScoped<IKitchenOrderRepository, KitchenOrderRepository>();
 builder.Services.AddScoped<IKitchenOrchestratorRepository, KitchenOrchestratorRepository>();
 builder.Services.AddScoped<IKitchenOrderItemRepository, KitchenOrderItemRepository>();
 builder.Services.AddSingleton<KitchenSchedulingPolicy>();
+builder.Services.AddSignalR();
 builder.Services.AddScoped<IKitchenOrchestrator, KitchenOrchestrator>();
+builder.Services.AddScoped<IKitchenNotifier, SignalRKitchenNotifier>();
 builder.Services.AddScoped<ICreateKitchenOrderHandler, CreateKitchenOrderHandler>();
 builder.Services.AddScoped<ICompleteKitchenOrderItemHandler, CompleteKitchenOrderItemHandler>();
 builder.Services.AddScoped<IOrderServiceClient, OrderServiceClient>();
@@ -64,6 +69,23 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty)),
             RoleClaimType = ClaimTypes.Role
+        };
+
+        // SignalR no puede enviar el header Authorization en el handshake WebSocket/SSE,
+        // por lo que el token se acepta tambien como query string (?access_token=...)
+        // unicamente para las solicitudes dirigidas al hub de Kitchen.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments(KitchenHubRoutes.Path))
+                    context.Token = accessToken;
+
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -100,6 +122,7 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<KitchenHub>(KitchenHubRoutes.Path);
 app.MapHealthChecks("/health");
 
 app.Run();
