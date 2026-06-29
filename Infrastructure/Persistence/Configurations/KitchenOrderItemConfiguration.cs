@@ -12,6 +12,11 @@ public class KitchenOrderItemConfiguration : IEntityTypeConfiguration<KitchenOrd
 
         builder.HasKey(x => x.Id);
 
+        builder.HasIndex(x => x.OrderItemId);
+
+        builder.Property(x => x.OrderItemId)
+            .IsRequired();
+
         builder.Property(x => x.Status)
             .HasConversion<int>()
             .IsRequired();
@@ -20,6 +25,9 @@ public class KitchenOrderItemConfiguration : IEntityTypeConfiguration<KitchenOrd
             .HasMaxLength(1000);
 
         builder.Property(x => x.FactorMultiplierTime)
+            .HasPrecision(5, 2);
+
+        builder.Property(x => x.MaxQuantityTimeMultiplier)
             .HasPrecision(5, 2);
 
         builder.Property(x => x.Version)

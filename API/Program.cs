@@ -42,6 +42,7 @@ builder.Services.AddScoped<ICreateKitchenOrderHandler, CreateKitchenOrderHandler
 builder.Services.AddScoped<ICompleteKitchenOrderItemHandler, CompleteKitchenOrderItemHandler>();
 builder.Services.AddScoped<IOrderServiceClient, OrderServiceClient>();
 builder.Services.AddScoped<IMaxConcurrentDishesHandler, MaxConcurrentDishesHandler>();
+builder.Services.AddScoped<IGetKitchenConfigurationHandler, GetKitchenConfigurationHandler>();
 builder.Services.AddScoped<ICancelKitchenOrderHandler, CancelKitchenOrderHandler>();
 
 var ordersBaseUrl = builder.Configuration["ExternalServices:Orders:BaseUrl"]
@@ -53,6 +54,10 @@ builder.Services.AddHttpClient<IOrderServiceClient, OrderServiceClient>(client =
     client.Timeout = TimeSpan.FromSeconds(10);
 })
 .AddHttpMessageHandler<AuthorizationHeaderPropagationHandler>();
+
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("Falta la configuracion Jwt:Key.");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -67,7 +72,7 @@ builder.Services
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty)),
+                Encoding.UTF8.GetBytes(jwtKey)),
             RoleClaimType = ClaimTypes.Role
         };
 
@@ -117,7 +122,8 @@ if (app.Environment.IsDevelopment())
     await SeedConfigurationAsync(db);
 }
 
-app.UseHttpsRedirection();
+if (!string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.OrdinalIgnoreCase))
+    app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
@@ -131,7 +137,12 @@ static async Task SeedConfigurationAsync(ApplicationDbContext db)
 {
     if (!db.KitchenConfigurations.Any())
     {
-        db.KitchenConfigurations.Add(new KitchenConfiguration { MaxConcurrentDishes = 10 });
+        db.KitchenConfigurations.Add(new KitchenConfiguration
+        {
+            MaxConcurrentDishes = KitchenConfiguration.DefaultMaxConcurrentDishes,
+            FactorMultiplierTime = KitchenConfiguration.DefaultFactorMultiplierTime,
+            MaxQuantityTimeMultiplier = KitchenConfiguration.DefaultMaxQuantityTimeMultiplier
+        });
         await db.SaveChangesAsync();
     }
 }

@@ -45,7 +45,11 @@ public sealed class KitchenOrder
 
     public void Enqueue()
     {
-        Status = OrderStatus.Pending;
+        if (Status != OrderStatus.Preparing)
+        {
+            Status = OrderStatus.Pending;
+            ActualFinishTime = null;
+        }
         Touch();
     }
 
@@ -70,8 +74,9 @@ public sealed class KitchenOrder
         if (Status == OrderStatus.Cancelled)
             throw new ConflictException("La orden ya esta cancelada.");
 
-        if (_items.Any(i => i.Status != ItemStatus.Pending))
-            throw new ConflictException("No se puede cancelar la orden porque ya hay items en preparacion o finalizados.");
+        var now = DateTime.UtcNow;
+        if (_items.Any(i => !i.CanCancel(now)))
+            throw new ConflictException("No se puede cancelar la orden porque ya hay platos en preparación o finalizados.");
 
         Status = OrderStatus.Cancelled;
         Touch();
@@ -81,6 +86,9 @@ public sealed class KitchenOrder
     }
 
     public int UsedSlots => _items.Count(i => i.IsPreparing);
+    public int PendingSlots => _items.Count(i => i.Status == ItemStatus.Pending);
+    public int ActiveSlots(DateTime now) => _items.Count(i => i.Status == ItemStatus.Preparing && i.StartTime.HasValue && i.StartTime.Value <= now);
+    public int UpcomingSlots(DateTime now) => _items.Count(i => i.Status == ItemStatus.Preparing && i.StartTime.HasValue && i.StartTime.Value > now);
 
     private void Touch() => LastUpdatedAt = DateTime.UtcNow;
 }

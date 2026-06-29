@@ -67,18 +67,25 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
         var item = await _itemRepository.GetItemByIdAsync(itemId, cancellationToken)
             ?? throw new NotFoundException("KitchenOrderItem", itemId);
 
-        if (item.IsFinished)
-            return;
-
-        item.Finish();
-        await _itemRepository.UpdateItemAsync(item, cancellationToken);
+        var expectedFinishTime = item.FinishTime;
+        if (!item.IsFinished)
+        {
+            item.Finish();
+            await _itemRepository.UpdateItemAsync(item, cancellationToken);
+        }
 
         var order = await _repository.GetByIdWithItemsAsync(item.KitchenOrderId, cancellationToken);
-        if (order is not null && order.Items.All(i => i.IsFinished))
+        if (order is not null)
         {
-            order.MarkReady();
-            await _repository.UpdateAsync(order, cancellationToken);
-            await _orderServiceClient.NotifyOrderReadyAsync(order.OrderId, cancellationToken);
+            await _orderServiceClient.NotifyOrderItemReadyAsync(order.OrderId, item.OrderItemId, cancellationToken);
+
+            if (order.Items.All(i => i.IsFinished))
+            {
+                var wasDelayed = expectedFinishTime.HasValue && DateTime.UtcNow > expectedFinishTime.Value;
+                order.MarkReady();
+                await _repository.UpdateAsync(order, cancellationToken);
+                await _orderServiceClient.NotifyOrderReadyAsync(order.OrderId, wasDelayed, cancellationToken);
+            }
         }
 
         await ScheduleAsync(cancellationToken);
@@ -102,8 +109,9 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
     private async Task TryScheduleAsync(CancellationToken cancellationToken)
     {
         var maxDishes = await _orchestratorRepository.GetMaxConcurrentDishesAsync(cancellationToken);
-        var activeOrders = await _repository.GetActiveOrdersAsync(cancellationToken);
-        var usedSlots = activeOrders.Sum(order => order.UsedSlots);
+        await AdvanceUpcomingOrdersAsync(maxDishes, cancellationToken);
+
+        var usedSlots = await _repository.CountPreparingItemsAsync(cancellationToken);
 
         while (usedSlots < maxDishes)
         {
@@ -113,14 +121,44 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
             if (order is null)
                 break;
 
-            if (order.Items.Count > availableSlots && usedSlots > 0)
+            var requiredSlots = order.PendingSlots;
+            if (requiredSlots == 0)
+                break;
+
+            if (requiredSlots > availableSlots && usedSlots > 0)
                 break;
 
             _schedulingPolicy.Schedule(order);
             order.StartPreparing();
             await _repository.UpdateAsync(order, cancellationToken);
 
-            usedSlots += order.Items.Count;
+            usedSlots += requiredSlots;
+        }
+    }
+
+    private async Task AdvanceUpcomingOrdersAsync(int maxDishes, CancellationToken cancellationToken)
+    {
+        var activeSlots = await _repository.CountActivePreparingItemsAsync(cancellationToken);
+
+        while (activeSlots < maxDishes)
+        {
+            var availableSlots = maxDishes - activeSlots;
+            var order = await _repository.GetNextUpcomingOrderAsync(cancellationToken);
+
+            if (order is null)
+                break;
+
+            var requiredSlots = order.UpcomingSlots(DateTime.UtcNow);
+            if (requiredSlots == 0)
+                break;
+
+            if (requiredSlots > availableSlots)
+                break;
+
+            _schedulingPolicy.AdvanceUpcoming(order);
+            await _repository.UpdateAsync(order, cancellationToken);
+
+            activeSlots += requiredSlots;
         }
     }
 
@@ -150,10 +188,13 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
     private static KitchenQueueItemResponse MapToQueueItem(KitchenOrderItem item) => new()
     {
         ItemId = item.Id,
+        OrderId = item.Order.OrderId,
+        TableNumber = item.Order.TableNumber,
         ProductName = item.ProductName,
         Quantity = item.Quantity,
         EstimatedTime = item.EstimatedTime,
         StartTime = item.StartTime,
+        FinishTime = item.FinishTime,
         Notes = item.Notes ?? string.Empty
     };
 }

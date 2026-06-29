@@ -17,19 +17,22 @@ public sealed class KitchenOrdersController : ControllerBase
     private readonly ICancelKitchenOrderHandler _cancelKitchenOrderHandler;
     private readonly ICompleteKitchenOrderItemHandler _completeItemHandler;
     private readonly IMaxConcurrentDishesHandler _maxConcurrentDishesHandler;
+    private readonly IGetKitchenConfigurationHandler _getKitchenConfigurationHandler;
 
     public KitchenOrdersController(
         ICreateKitchenOrderHandler createHandler,
         ICancelKitchenOrderHandler cancelKitchenOrder,
         IKitchenOrchestrator orchestrator,
         ICompleteKitchenOrderItemHandler completeItemHandler,
-        IMaxConcurrentDishesHandler maxConcurrentDishesHandler)
+        IMaxConcurrentDishesHandler maxConcurrentDishesHandler,
+        IGetKitchenConfigurationHandler getKitchenConfigurationHandler)
     {
         _createHandler = createHandler;
         _orchestrator = orchestrator;
         _completeItemHandler = completeItemHandler;
         _cancelKitchenOrderHandler = cancelKitchenOrder;
         _maxConcurrentDishesHandler = maxConcurrentDishesHandler;
+        _getKitchenConfigurationHandler = getKitchenConfigurationHandler;
     }
 
     [HttpPost]
@@ -46,6 +49,11 @@ public sealed class KitchenOrdersController : ControllerBase
     [Authorize(Roles = ApplicationRoles.AdminOrKitchen)]
     public async Task<ActionResult<List<KitchenQueueItemResponse>>> GetWaitingItems(CancellationToken cancellationToken)
         => Ok(await _orchestrator.GetWaitingItemsAsync(cancellationToken));
+
+    [HttpGet("configuration")]
+    [Authorize(Roles = ApplicationRoles.Admin)]
+    public async Task<ActionResult<KitchenConfigurationDto>> GetConfiguration(CancellationToken cancellationToken)
+        => Ok(await _getKitchenConfigurationHandler.ExecuteAsync(cancellationToken));
 
     [HttpPatch("items/{id:guid}/complete")]
     [Authorize(Roles = ApplicationRoles.AdminOrKitchen)]

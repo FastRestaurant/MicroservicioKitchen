@@ -17,11 +17,22 @@ public sealed class KitchenOrchestratorRepository : IKitchenOrchestratorReposito
 
     public async Task<int> GetMaxConcurrentDishesAsync(CancellationToken cancellationToken = default)
     {
-        var config = await _context.KitchenConfigurations.FirstOrDefaultAsync(cancellationToken);
-        return config?.MaxConcurrentDishes ?? 10;
+        var config = await GetConfigurationAsync(cancellationToken);
+        return config.MaxConcurrentDishes;
     }
 
-    public async Task UpdateMaxConcurrentDishesAsync(int maxConcurrentDishes, CancellationToken cancellationToken = default)
+    public async Task<KitchenConfiguration> GetConfigurationAsync(CancellationToken cancellationToken = default)
+    {
+        var config = await _context.KitchenConfigurations.FirstOrDefaultAsync(cancellationToken);
+        return config ?? new KitchenConfiguration
+        {
+            MaxConcurrentDishes = KitchenConfiguration.DefaultMaxConcurrentDishes,
+            FactorMultiplierTime = KitchenConfiguration.DefaultFactorMultiplierTime,
+            MaxQuantityTimeMultiplier = KitchenConfiguration.DefaultMaxQuantityTimeMultiplier
+        };
+    }
+
+    public async Task UpdateConfigurationAsync(int maxConcurrentDishes, decimal factorMultiplierTime, decimal maxQuantityTimeMultiplier, CancellationToken cancellationToken = default)
     {
         var configuration = await _context.KitchenConfigurations.FirstOrDefaultAsync(cancellationToken);
 
@@ -29,6 +40,8 @@ public sealed class KitchenOrchestratorRepository : IKitchenOrchestratorReposito
             throw new NotFoundException("KitchenConfiguration", "default");
 
         configuration.MaxConcurrentDishes = maxConcurrentDishes;
+        configuration.FactorMultiplierTime = factorMultiplierTime;
+        configuration.MaxQuantityTimeMultiplier = maxQuantityTimeMultiplier;
 
         await _context.SaveChangesAsync(cancellationToken);
     }

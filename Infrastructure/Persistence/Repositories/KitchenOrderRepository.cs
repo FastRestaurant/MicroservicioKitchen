@@ -43,11 +43,16 @@ public sealed class KitchenOrderRepository : IKitchenOrderRepository
         return order;
     }
 
+    public async Task AddItemsAsync(IEnumerable<KitchenOrderItem> items, CancellationToken cancellationToken = default)
+    {
+        await _context.KitchenOrderItems.AddRangeAsync(items, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<KitchenOrder> UpdateAsync(KitchenOrder order, CancellationToken cancellationToken = default)
     {
         try
         {
-            _context.KitchenOrders.Update(order);
             await _context.SaveChangesAsync(cancellationToken);
             return order;
         }
@@ -65,11 +70,47 @@ public sealed class KitchenOrderRepository : IKitchenOrderRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<int> CountActivePreparingItemsAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+
+        return await _context.KitchenOrderItems
+            .Where(i => i.Status == ItemStatus.Preparing &&
+                        i.StartTime != null &&
+                        i.StartTime <= now &&
+                        i.Order.Status == OrderStatus.Preparing)
+            .CountAsync(cancellationToken);
+    }
+
+    public async Task<int> CountPreparingItemsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.KitchenOrderItems
+            .Where(i => i.Status == ItemStatus.Preparing &&
+                        i.Order.Status == OrderStatus.Preparing)
+            .CountAsync(cancellationToken);
+    }
+
+    public async Task<KitchenOrder?> GetNextUpcomingOrderAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+
+        return await _context.KitchenOrders
+            .Include(o => o.Items)
+            .Where(o => o.Status == OrderStatus.Preparing)
+            .Where(o => o.Items.Any(i => i.Status == ItemStatus.Preparing && i.StartTime != null && i.StartTime > now))
+            .Where(o => !o.Items.Any(i => i.Status == ItemStatus.Preparing && i.StartTime != null && i.StartTime <= now))
+            .OrderBy(o => o.Items
+                .Where(i => i.Status == ItemStatus.Preparing && i.StartTime != null && i.StartTime > now)
+                .Min(i => i.StartTime))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<KitchenOrder?> GetNextWaitingOrderAsync(CancellationToken cancellationToken = default)
     {
         return await _context.KitchenOrders
             .Include(o => o.Items)
-            .Where(o => o.Status == OrderStatus.Pending)
+            .Where(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Preparing)
+            .Where(o => o.Items.Any(i => i.Status == ItemStatus.Pending))
             .OrderBy(o => o.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
     }

@@ -1,6 +1,6 @@
-namespace Application.UseCases.KitchenOrders.Commands;
+namespace Application.DTOs;
 
-public sealed class UpdateMaxConcurrentDishesCommand
+public sealed class KitchenConfigurationDto
 {
     public int MaxConcurrentDishes { get; init; }
     public decimal FactorMultiplierTime { get; init; }

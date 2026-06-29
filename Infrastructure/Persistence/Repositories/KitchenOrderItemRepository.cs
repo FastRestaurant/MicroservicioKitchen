@@ -56,7 +56,7 @@ public sealed class KitchenOrderItemRepository : IKitchenOrderItemRepository
             .AsNoTracking()
             .Include(i => i.Order)
             .Where(i =>
-                i.Order.Status == OrderStatus.Preparing &&
+                i.Order.Status != OrderStatus.Cancelled &&
                 i.Status == ItemStatus.Preparing &&
                 i.StartTime > now)
             .OrderBy(i => i.StartTime)
@@ -69,7 +69,7 @@ public sealed class KitchenOrderItemRepository : IKitchenOrderItemRepository
             .AsNoTracking()
             .Include(i => i.Order)
             .Where(i =>
-                i.Order.Status == OrderStatus.Pending &&
+                i.Order.Status != OrderStatus.Cancelled &&
                 i.Status == ItemStatus.Pending)
             .OrderBy(i => i.Order.CreatedAt)
             .ToListAsync(cancellationToken);
