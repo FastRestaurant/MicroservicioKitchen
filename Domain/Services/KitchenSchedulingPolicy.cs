@@ -7,17 +7,17 @@ public sealed class KitchenSchedulingPolicy
 {
     public void Schedule(KitchenOrder order)
     {
-        var pendingItems = order.Items
-            .Where(item => item.Status == ItemStatus.Pending)
+        var liveItems = order.Items
+            .Where(item => item.Status is ItemStatus.Pending or ItemStatus.Preparing)
             .ToArray();
 
-        if (pendingItems.Length == 0)
+        if (liveItems.Length == 0)
             return;
 
-        var longestEstimated = pendingItems.Max(item => item.ComputeEstimatedTime());
+        var longestEstimated = liveItems.Max(item => item.ComputeEstimatedTime());
         var targetFinish = DateTime.UtcNow.AddMinutes(longestEstimated);
 
-        foreach (var item in pendingItems)
+        foreach (var item in liveItems)
             item.Schedule(targetFinish);
     }
 
