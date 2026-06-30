@@ -37,26 +37,47 @@ public sealed class KitchenOrdersController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = ApplicationRoles.AdminWaitressOrKitchen)]
+    [ProducesResponseType(typeof(CreateKitchenOrderResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CreateKitchenOrderResponseDto>> Create([FromBody] CreateKitchenOrderCommand command, CancellationToken cancellationToken)
         => Ok(await _createHandler.CreateKitchenOrder(command, cancellationToken));
 
     [HttpGet("queue")]
     [Authorize(Roles = ApplicationRoles.AdminOrKitchen)]
+    [ProducesResponseType(typeof(List<KitchenQueueItemResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<KitchenQueueItemResponse>>> GetQueue(CancellationToken cancellationToken)
         => Ok(await _orchestrator.GetItemsFromQueueAsync(cancellationToken));
 
     [HttpGet("queue-waiting-items")]
     [Authorize(Roles = ApplicationRoles.AdminOrKitchen)]
+    [ProducesResponseType(typeof(List<KitchenQueueItemResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<KitchenQueueItemResponse>>> GetWaitingItems(CancellationToken cancellationToken)
         => Ok(await _orchestrator.GetWaitingItemsAsync(cancellationToken));
 
     [HttpGet("configuration")]
     [Authorize(Roles = ApplicationRoles.Admin)]
+    [ProducesResponseType(typeof(KitchenConfigurationDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<KitchenConfigurationDto>> GetConfiguration(CancellationToken cancellationToken)
         => Ok(await _getKitchenConfigurationHandler.ExecuteAsync(cancellationToken));
 
     [HttpPatch("items/{id:guid}/complete")]
     [Authorize(Roles = ApplicationRoles.AdminOrKitchen)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CompleteItem(Guid id, CancellationToken cancellationToken)
     {
         await _completeItemHandler.ExecuteAsync(id, cancellationToken);
@@ -65,6 +86,11 @@ public sealed class KitchenOrdersController : ControllerBase
 
     [HttpPatch("orders/{id:guid}/cancel")]
     [Authorize(Roles = ApplicationRoles.AdminOrWaitress)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CancelOrder(Guid id, CancellationToken cancellationToken)
     {
         await _cancelKitchenOrderHandler.ExecuteAsync(id, cancellationToken);
@@ -73,6 +99,11 @@ public sealed class KitchenOrdersController : ControllerBase
 
     [HttpPatch("by-order/{orderId:guid}/cancel")]
     [Authorize(Roles = ApplicationRoles.AdminOrWaitress)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CancelByOrderId(Guid orderId, CancellationToken cancellationToken)
     {
         await _cancelKitchenOrderHandler.ExecuteByOrderIdAsync(orderId, cancellationToken);
@@ -81,6 +112,11 @@ public sealed class KitchenOrdersController : ControllerBase
 
     [HttpPatch("max-concurrent-dishes")]
     [Authorize(Roles = ApplicationRoles.Admin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateMaxConcurrentDishes([FromBody] UpdateMaxConcurrentDishesCommand command, CancellationToken cancellationToken)
     {
         await _maxConcurrentDishesHandler.ExecuteAsync(command, cancellationToken);
