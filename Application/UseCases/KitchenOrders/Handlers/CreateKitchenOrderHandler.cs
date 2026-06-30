@@ -51,8 +51,10 @@ public sealed class CreateKitchenOrderHandler : ICreateKitchenOrderHandler
                 await _unitOfWork.ExecuteAsync(async () =>
                 {
                     await _repository.AddItemsAsync(itemsToAdd, cancellationToken);
-                    await _orchestrator.EnqueueOrderAsync(existing.Id, cancellationToken);
+                    await _orchestrator.EnqueueOrderWithoutNotificationAsync(existing.Id, cancellationToken);
                 }, cancellationToken);
+
+                await _orchestrator.NotifyQueueChangedAsync(cancellationToken);
             }
 
             return new CreateKitchenOrderResponseDto
@@ -68,9 +70,11 @@ public sealed class CreateKitchenOrderHandler : ICreateKitchenOrderHandler
         var savedOrder = await _unitOfWork.ExecuteAsync(async () =>
         {
             var created = await _repository.CreateAsync(order, cancellationToken);
-            await _orchestrator.EnqueueOrderAsync(created.Id, cancellationToken);
+            await _orchestrator.EnqueueOrderWithoutNotificationAsync(created.Id, cancellationToken);
             return created;
         }, cancellationToken);
+
+        await _orchestrator.NotifyQueueChangedAsync(cancellationToken);
 
         return new CreateKitchenOrderResponseDto
         {

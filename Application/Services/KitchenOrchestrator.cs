@@ -53,13 +53,19 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
 
     public async Task EnqueueOrderAsync(Guid kitchenOrderId, CancellationToken cancellationToken = default)
     {
+        await EnqueueOrderWithoutNotificationAsync(kitchenOrderId, cancellationToken);
+        await NotifyQueueChangedAsync(cancellationToken);
+    }
+
+    public async Task EnqueueOrderWithoutNotificationAsync(Guid kitchenOrderId, CancellationToken cancellationToken = default)
+    {
         var order = await _repository.GetByIdAsync(kitchenOrderId, cancellationToken)
             ?? throw new NotFoundException("KitchenOrder", kitchenOrderId);
 
         order.Enqueue();
         await _repository.UpdateAsync(order, cancellationToken);
 
-        await ScheduleAsync(cancellationToken);
+        await ScheduleWithoutNotificationAsync(cancellationToken);
     }
 
     public async Task FinishItemAsync(Guid itemId, CancellationToken cancellationToken = default)
@@ -93,6 +99,12 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
 
     public async Task ScheduleAsync(CancellationToken cancellationToken = default)
     {
+        await ScheduleWithoutNotificationAsync(cancellationToken);
+        await NotifyQueueChangedAsync(cancellationToken);
+    }
+
+    private async Task ScheduleWithoutNotificationAsync(CancellationToken cancellationToken = default)
+    {
         await ScheduleGate.WaitAsync(cancellationToken);
         try
         {
@@ -102,8 +114,6 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
         {
             ScheduleGate.Release();
         }
-
-        await NotifyQueueChangedAsync(cancellationToken);
     }
 
     private async Task TryScheduleAsync(CancellationToken cancellationToken)
@@ -162,7 +172,7 @@ public sealed class KitchenOrchestrator : IKitchenOrchestrator
         }
     }
 
-    private async Task NotifyQueueChangedAsync(CancellationToken cancellationToken)
+    public async Task NotifyQueueChangedAsync(CancellationToken cancellationToken = default)
     {
         try
         {
